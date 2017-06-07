@@ -1,0 +1,77 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: jenkins
+spec:
+  revisionHistoryLimit: 2
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: jenkins
+        version: "2.63"
+      annotations:
+        pod.beta.kubernetes.io/init-containers: '[
+                {
+                  "name": "jenkins-volume-permissions",
+                  "image": "alpine",
+                  "imagePullPolicy": "IfNotPresent",
+                  "command": ["chown", "1000:1000", "/var/jenkins_home"],
+                  "volumeMounts": [
+                    {
+                      "name": "jenkins-home",
+                      "mountPath": "/var/jenkins_home"
+                    }
+                  ]
+                },
+                {
+                  "name": "plugin-config",
+                  "image": "jenkinsci/jenkins:2.63-alpine",
+                  "imagePullPolicy": "IfNotPresent",
+                  "command": ["/bin/sh","-c"],
+                  "args": ["
+                    /usr/local/bin/install-plugins.sh github:latest &&
+                    /usr/local/bin/install-plugins.sh github-oauth:latest &&
+                    /usr/local/bin/install-plugins.sh workflow-aggregator:latest &&
+                    /usr/local/bin/install-plugins.sh kubernetes:latest &&
+                    /usr/local/bin/install-plugins.sh greenballs:latest &&
+                    /usr/local/bin/install-plugins.sh buildtriggerbadge:latest &&
+                    /usr/local/bin/install-plugins.sh timestamper:latest &&
+                    /usr/local/bin/install-plugins.sh global-build-stats:latest &&
+                    /usr/local/bin/install-plugins.sh junit:latest
+                  "],
+                  "volumeMounts": [
+                    {
+                      "name": "jenkins-plugins",
+                      "mountPath": "/usr/share/jenkins/ref"
+                    }
+                  ]
+                }
+        ]'
+    spec:
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      containers:
+        - name: jenkins
+          image: jenkinsci/jenkins:2.63-alpine
+          imagePullPolicy: Always
+          env:
+            - name: JAVA_OPTS
+              value: -Djenkins.install.runSetupWizard=false -Dorg.csanchez.jenkins.plugins.kubernetes.pipeline.PodTemplateStepExecution.defaultImage=jenkinsci/jnlp-slave
+          ports:
+            - name: http-port
+              containerPort: 8080
+            - name: slave-port
+              containerPort: 50000
+          volumeMounts:
+            - name: jenkins-home
+              mountPath: /var/jenkins_home
+            - name: jenkins-plugins
+              mountPath: /usr/share/jenkins/ref
+      volumes:
+        - name: jenkins-home
+          #emptyDir: {}
+          persistentVolumeClaim:
+            claimName: jenkins-home
+        - name: jenkins-plugins
+          emptyDir: {}
