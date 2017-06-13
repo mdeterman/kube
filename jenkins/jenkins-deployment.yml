@@ -28,18 +28,21 @@ spec:
                   "name": "plugin-config",
                   "image": "jenkinsci/jenkins:2.63-alpine",
                   "imagePullPolicy": "IfNotPresent",
-                  "command": ["/bin/sh","-c"],
-                  "args": ["
-                    /usr/local/bin/install-plugins.sh github:latest &&
-                    /usr/local/bin/install-plugins.sh github-oauth:latest &&
-                    /usr/local/bin/install-plugins.sh workflow-aggregator:latest &&
-                    /usr/local/bin/install-plugins.sh kubernetes:latest &&
-                    /usr/local/bin/install-plugins.sh greenballs:latest &&
-                    /usr/local/bin/install-plugins.sh buildtriggerbadge:latest &&
-                    /usr/local/bin/install-plugins.sh timestamper:latest &&
-                    /usr/local/bin/install-plugins.sh global-build-stats:latest &&
-                    /usr/local/bin/install-plugins.sh junit:latest
-                  "],
+                  "command": ["/usr/local/bin/install-plugins.sh"],
+                  "args": [
+                    "github:latest",
+                    "github-oauth:latest",
+                    "workflow-aggregator:latest",
+                    "kubernetes:latest",
+                    "kubernetes-pipeline-steps",
+                    "greenballs:latest",
+                    "buildtriggerbadge:latest",
+                    "timestamper:latest",
+                    "global-build-stats:latest",
+                    "pipeline-model-definition:latest",
+                    "pipeline-utility-steps:latest",
+                    "metrics:latest"
+                  ],
                   "volumeMounts": [
                     {
                       "name": "jenkins-plugins",
@@ -68,9 +71,20 @@ spec:
               mountPath: /var/jenkins_home
             - name: jenkins-plugins
               mountPath: /usr/share/jenkins/ref
+          livenessProbe:
+            httpGet:
+              path: /metrics/2CLALUZKREff_Nc1HTwqvE9AxDysudQckaHw4ayDjCGHZj-nqh0poRONCRQPr3Jl/healthcheck
+              port: 8080
+            initialDelaySeconds: 90
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /metrics/2CLALUZKREff_Nc1HTwqvE9AxDysudQckaHw4ayDjCGHZj-nqh0poRONCRQPr3Jl/healthcheck
+              port: 8080
+            initialDelaySeconds: 90
+            timeoutSeconds: 5
       volumes:
         - name: jenkins-home
-          #emptyDir: {}
           persistentVolumeClaim:
             claimName: jenkins-home
         - name: jenkins-plugins

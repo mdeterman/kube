@@ -17,18 +17,3 @@ spec:
       name: slave
   selector:
     app: jenkins
-# ---
-# apiVersion: v1
-# kind: Service
-# metadata:
-#   name: jenkins-slave
-#   labels:
-#     app: jenkins
-# spec:
-#   ports:
-#     - port: 5000
-#       targetPort: 5000
-#       protocol: TCP
-#       name: tcp-5000
-#   selector:
-#     app: jenkins
